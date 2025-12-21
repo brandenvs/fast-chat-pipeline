@@ -1,0 +1,10 @@
+.env
+.venv
+plan.md
+.vscode
+chat.db
+app/context/documents
+app/context/images
+app/context/videos
+__pycache__/
+tests/
