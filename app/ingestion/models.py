@@ -8,7 +8,10 @@ class IngestResponse(BaseModel):
 
 
 class ContextChunk(BaseModel):
-    sourceId: str
-    sourceType: str
     content: str
     page: Optional[int] = None
+    start_time_sec: Optional[float] = None
+    end_time_sec: Optional[float] = None
+
+
+    

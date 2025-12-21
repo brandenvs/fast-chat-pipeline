@@ -11,6 +11,5 @@ You can run this api locally small document and some image processing but video 
 
 ### Architecture (context processing)
 
-- Document to Text (parse-first)
-- Text Image Pipeline (OCR-first)
+...
 
