@@ -4,8 +4,9 @@ from ingestion.chunking import chunk_text
 from ingestion.config import IMAGE_DIR
 from ingestion.file_storage import save_uploaded_file
 from ingestion.ocr_helper import infer_ocr
-from storage.chunk_repo import save_chunks
-from ingestion.models import ContextChunk, IngestResponse
+from storage.weaviate import save_chunks
+
+from services.models import ContextChunk, IngestResponse
 from uuid import uuid4
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
@@ -32,13 +33,13 @@ async def process_image(file):
                     content=chunk,
                 )
             )
-        saved = await save_chunks(chunks)
+        saved = await save_chunks('image', chunks)
     finally:
         # cleanup
         if file_path and Path(file_path).exists():
             Path(file_path).unlink(missing_ok=True)
     return IngestResponse(
         sourceId=source_id,
-        chunksCreated=saved,
+        chunks_created=saved,
         status="document parsed",
     )

@@ -1,5 +1,3 @@
-
-name: pgai
 services:
   db:
     image: timescale/timescaledb-ha:pg17
@@ -9,10 +7,46 @@ services:
       - "5432:5432"
     volumes:
       - data:/home/postgres/pgdata/data
-  vectorizer-worker:
-    image: timescale/pgai-vectorizer-worker:latest
+
+  # --> WE ARE USING WEAVIATE BUT KEEP THIS AS OPTIONAL - NOT FULLY WIRED UP THOUGH
+  # vectorizer-worker:
+  #   image: timescale/pgai-vectorizer-worker:latest
+  #   environment:
+  #     PGAI_VECTORIZER_WORKER_DB_URL: postgres://postgres:postgres@db:5432/postgres
+  #   command: ["--poll-interval", "5s", "--log-level", "DEBUG"]
+
+  weaviate:
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --scheme
+      - http
+    image: cr.weaviate.io/semitechnologies/weaviate:1.35.1
+    ports:
+      - 8080:8080
+      - 50051:50051
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    restart: on-failure:0
     environment:
-      PGAI_VECTORIZER_WORKER_DB_URL: postgres://postgres:postgres@db:5432/postgres
-    command: [ "--poll-interval", "5s", "--log-level", "DEBUG" ]
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      ENABLE_MODULES: "text2vec-ollama,generative-ollama"
+      CLUSTER_HOSTNAME: "node1"
+      OLLAMA_API_ENDPOINT: "http://ollama:11434"
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:0.12.9
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
 volumes:
+  weaviate_data:
+  ollama_data:
   data:

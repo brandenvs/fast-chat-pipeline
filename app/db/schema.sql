@@ -11,7 +11,7 @@ ON chat_messages (session_id, created_at);
 
 CREATE TABLE IF NOT EXISTS document_chunks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    source_id TEXT NOT NULL,
+    -- source_id TEXT NOT NULL,
     source_type TEXT NOT NULL,
     content TEXT NOT NULL,
     page INTEGER,

@@ -31,10 +31,6 @@ CREATE TABLE context_chunks (
   -- Video metadata
   start_time_sec FLOAT,
   end_time_sec FLOAT,
-  -- Image metadata
-  image_region JSONB,
-  -- Embedding
-  embedding VECTOR(1536), 
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

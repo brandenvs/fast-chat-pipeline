@@ -24,7 +24,7 @@
 import asyncpg
 from contextlib import asynccontextmanager
 
-DATABASE_URL = "postgres://postgres:password@127.0.0.1:5432/postgres"
+DATABASE_URL = "postgres://postgres:postgres@127.0.0.1:5432/postgres"
 
 _pool: asyncpg.Pool | None = None
 

@@ -1,1 +1,1 @@
-DELETE FROM document_chunks;
+SELECT * FROM context_chunks;

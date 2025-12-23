@@ -8,13 +8,8 @@ def needs_ocr(text: str) -> bool:
     return len(text.strip()) < 50
 
 def normalize_text(text: str) -> str:
-    return (
-        text
-        .replace("\x00", "")
-        .replace("\u200b", "")
-        .strip()
-    )
-
+    return text.replace("\x00", "").replace("\u200b", "").strip()
+    
 def parse_pdf(file_path: Path) -> List[dict]:
     reader = PdfReader(str(file_path))
     pages = []

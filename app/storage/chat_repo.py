@@ -28,5 +28,4 @@ async def get_session_messages(session_id: str, limit: int = 50) -> List[Dict]:
             session_id,
             limit,
         )
-
     return [{"role": r["role"], "content": r["content"]} for r in rows]
