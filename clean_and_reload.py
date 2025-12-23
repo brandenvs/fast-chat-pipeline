@@ -52,9 +52,8 @@ def wipe_weaviate():
         except Exception:
             print(" - Collection did not exist")
 
-        # Recreate collection
         client.collections.create(
-            name=WEAVIATE_COLLECTION,
+            name="Context",
             properties=[
                 Property(name="source_type", data_type=DataType.TEXT),
                 Property(name="content", data_type=DataType.TEXT),
@@ -63,10 +62,15 @@ def wipe_weaviate():
                 Property(name="end_time_sec", data_type=DataType.NUMBER),
             ],
             vector_config=Configure.Vectors.text2vec_ollama(
-                api_endpoint=WEAVIATE_OLLAMA_ENDPOINT,
+                api_endpoint="http://ollama:11434",
                 model="nomic-embed-text",
             ),
+            generative_config=Configure.Generative.ollama(
+                api_endpoint="http://ollama:11434",
+                model="llama3.2",
+            ),
         )
+
 
     print(">> Weaviate reset")
 

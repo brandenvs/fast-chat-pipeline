@@ -82,15 +82,35 @@ async def save_chunks(
 
     return len(records)
 
+def get_context(query: str):
+    sematic_search_results = get_context_semantic(query)
+    print('semantic result ', sematic_search_results)
+
+    context_content = "\n\n".join(
+        c["content"]
+        for c in sematic_search_results
+        if c.get("content") and c.get('distance') <= .49 # lower means better relevancy
+    )
+    return context_content
+    if (context_content or context_content.strip() != ''): 
+        return context_content
+    else:
+        rag_result = get_context_rag(query)
+        return rag_result.get("content")
+
 
 def get_context_semantic(query: str, limit: int = 5):
     with weaviate.connect_to_local() as client:
         collection = client.collections.use("Context")
 
-        response = collection.query.near_text(
+        response = collection.generate.near_text(
             query=query,
             limit=limit,
-            return_metadata=["distance"]
+            return_metadata=["distance"],
+            grouped_task=(
+                "Condense the information for a chatbot to quickly consume. "
+                "Only include the condensed text."
+            ),
         )
 
         return [
@@ -104,6 +124,23 @@ def get_context_semantic(query: str, limit: int = 5):
 
 
 # RAG SEARCH (WITH LLM)
+# def get_context_rag(query: str):
+#     with weaviate.connect_to_local() as client:
+#         collection = client.collections.use(WEAVIATE_COLLECTION)
+
+#         response = collection.generate.near_text(
+#             query=query,
+#             limit=3,
+#             # return_metadata=["distance"],
+#             grouped_task="Condense the information for a chatbot to quickly consume. Only include the condensed text.",
+#             generative_provider=GenerativeConfig.ollama(
+#                 api_endpoint="http://ollama:11434",
+#                 model="llama3.2",
+#             ),
+#         )
+
+#         return response.generative.text
+
 def get_context_rag(query: str):
     with weaviate.connect_to_local() as client:
         collection = client.collections.use(WEAVIATE_COLLECTION)
@@ -111,14 +148,32 @@ def get_context_rag(query: str):
         response = collection.generate.near_text(
             query=query,
             limit=3,
-            grouped_task="Condense the information for a chatbot to quickly consume",
+            return_metadata=["distance"],
+            grouped_task=(
+                "Condense the information for a chatbot to quickly consume. "
+                "Only include the condensed text."
+            ),
             generative_provider=GenerativeConfig.ollama(
                 api_endpoint="http://ollama:11434",
                 model="llama3.2",
             ),
         )
 
-        return response.generative.text
+        # Extract distances from retrieved objects
+        distances = [
+            obj.metadata.distance
+            for obj in response.objects
+            if obj.metadata and obj.metadata.distance is not None
+        ]
+
+        best_distance = min(distances) if distances else None
+
+        return {
+            "content": response.generative.text,
+            "best_distance": best_distance,
+            "distances": distances,
+        }
+
 
 
 # DELETE CONTEXT BY SOURCE TYPE
