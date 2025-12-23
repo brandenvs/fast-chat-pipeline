@@ -36,7 +36,7 @@ async def save_chunks(
         for c in chunks
     ]
 
-    # ---- Weaviate insert ----
+    #  Weaviate insert 
     with weaviate.connect_to_local() as client:
         collection = client.collections.use(WEAVIATE_COLLECTION)
 
@@ -53,7 +53,7 @@ async def save_chunks(
                     },
                 )
 
-    # ---- Postgres insert ----
+    #  Postgres insert 
     async with get_db() as conn:
         await conn.executemany(
             """
@@ -180,7 +180,7 @@ def get_context_rag(query: str):
 async def delete_context_by_source_type(source_type: str) -> int:
     deleted_weaviate = 0
 
-    # ---- Weaviate delete ----
+    #  Weaviate delete 
     with weaviate.connect_to_local() as client:
         collection = client.collections.use(WEAVIATE_COLLECTION)
 
@@ -190,7 +190,7 @@ async def delete_context_by_source_type(source_type: str) -> int:
 
         deleted_weaviate = result.matches
 
-    # ---- Postgres delete ----
+    #  Postgres delete 
     async with get_db() as conn:
         result = await conn.execute(
             """
