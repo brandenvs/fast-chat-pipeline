@@ -58,8 +58,8 @@ def wipe_weaviate():
                 Property(name="source_type", data_type=DataType.TEXT),
                 Property(name="content", data_type=DataType.TEXT),
                 Property(name="page_number", data_type=DataType.INT),
-                Property(name="start_time_sec", data_type=DataType.NUMBER),
-                Property(name="end_time_sec", data_type=DataType.NUMBER),
+                Property(name="keywords", data_type=DataType.TEXT_ARRAY),
+                Property(name="typical_questions", data_type=DataType.TEXT_ARRAY),
             ],
             vector_config=Configure.Vectors.text2vec_ollama(
                 api_endpoint="http://ollama:11434",

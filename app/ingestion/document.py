@@ -1,14 +1,15 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from uuid import uuid4
 
+from ingestion.llm_helper import generate_keywords_and_questions
 from storage.weaviate import save_chunks
 from ingestion.file_storage import save_uploaded_file
 from ingestion.config import DOCUMENT_DIR
 from ingestion.chunking import chunk_text
 from ingestion.pdf_parser import parse_pdf
 from ingestion.document_extractor import extract_text_data
-
 from services.models import ContextChunk, IngestResponse
+
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
@@ -35,29 +36,31 @@ async def process_document(file: UploadFile) -> IngestResponse:
         data = extract_text_data(file_path)
 
     chunks: list[ContextChunk] = []
-    for entry in data:
-        for chunk in chunk_text(entry["text"]):
-            if entry.get("page") is None:
-                page_number = 1
-            else:
-                page_number = entry.get("page")
-            print(chunk)
+    for idx, page in enumerate(data):
+        print('PAGE ', idx)
+        keywords, typical_questions = await generate_keywords_and_questions(page["text"])
+        print('GENERATED KEYWORDS ', keywords)
+        print('GENERATED TYPICAL QUESTIONS ', typical_questions)
+
+        for chunk in chunk_text(page["text"]):
             chunks.append(
                 ContextChunk(
+                    source_id=uuid4().__str__(),
                     source_type=source_type,
                     content=chunk,
-                    page_number=page_number,
+                    page_number=idx,
+                    keywords=keywords,
+                    typical_questions=typical_questions,
                 )
             )
-    saved = await save_chunks('document', chunks)
+    total_saved = await save_chunks(chunks)
     try:
         if file_path.exists():
             file_path.unlink(missing_ok=True) # cleanup
     except Exception as ex:
-        print("Cleanup failed:", ex)
-
-    print(saved)
+        print("Cleanup failed:", ex)        
     return IngestResponse(
-        chunks_created=saved,
+        chunks_created=total_saved,
         status=f"{ext} parsed",
     )
+

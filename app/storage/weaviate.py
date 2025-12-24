@@ -1,203 +1,221 @@
-# services/weaviate.py
-import json
-from typing import Iterable
-from uuid import uuid4
-
+import re
+from typing import Dict, Iterable, List
 import weaviate
-from weaviate.classes.query import Filter
-from weaviate.classes.generate import GenerativeConfig
-
+from weaviate.classes.query import MetadataQuery
 from services.models import ContextChunk
-from storage.db import get_db
+from storage.db_helper import insert_context_chunks
+import httpx
+from typing import Optional
 
+# CONTEXT INSERTS
 
-WEAVIATE_COLLECTION = "Context"
-
-
-# INSERT / UPSERT CONTEXT
-async def save_chunks(
-    source_type: str,
-    chunks: Iterable[ContextChunk],
-) -> int:
-    chunks = list(chunks)
-    if not chunks:
+async def save_chunks(incoming_chunks: Iterable[ContextChunk]) -> int:
+    create_chunks = list(incoming_chunks)
+    if not create_chunks:
         return 0
 
-    # Generate IDs once
-    records = [
-        {
-            "id": str(uuid4()),
-            "source_type": source_type,
-            "content": c.content,
-            "page_number": c.page,
-            "start_time_sec": c.start_time_sec,
-            "end_time_sec": c.end_time_sec,
-        }
-        for c in chunks
-    ]
-
-    #  Weaviate insert 
-    with weaviate.connect_to_local() as client:
-        collection = client.collections.use(WEAVIATE_COLLECTION)
-
-        with collection.batch.fixed_size(batch_size=200) as batch:
-            for r in records:
-                batch.add_object(
-                    uuid=r["id"],
-                    properties={
-                        "source_type": r["source_type"],
-                        "content": r["content"],
-                        "page_number": r["page_number"],
-                        "start_time_sec": r["start_time_sec"],
-                        "end_time_sec": r["end_time_sec"],
-                    },
-                )
-
-    #  Postgres insert 
-    async with get_db() as conn:
-        await conn.executemany(
-            """
-            INSERT INTO context_chunks (
-                id,
-                source_type,
-                content,
-                page_number,
-                start_time_sec,
-                end_time_sec
-            )
-            VALUES ($1, $2, $3, $4, $5, $6)
-            """,
-            [
-                (
-                    r["id"],
-                    r["source_type"],
-                    r["content"],
-                    r["page_number"],
-                    r["start_time_sec"],
-                    r["end_time_sec"],
-                )
-                for r in records
-            ],
-        )
-
-    return len(records)
-
-def get_context(query: str):
-    sematic_search_results = get_context_semantic(query)
-    print('semantic result ', sematic_search_results)
-
-    context_content = "\n\n".join(
-        c["content"]
-        for c in sematic_search_results
-        if c.get("content") and c.get('distance') <= .49 # lower means better relevancy
-    )
-    return context_content
-    if (context_content or context_content.strip() != ''): 
-        return context_content
-    else:
-        rag_result = get_context_rag(query)
-        return rag_result.get("content")
-
-
-def get_context_semantic(query: str, limit: int = 5):
+    # Weaviate insert
     with weaviate.connect_to_local() as client:
         collection = client.collections.use("Context")
+        with collection.batch.fixed_size(batch_size=200) as batch:
+            for chunk in create_chunks:
+                batch.add_object(
+                    uuid=chunk.source_id,
+                    properties={
+                        "source_type": chunk.source_type,
+                        "content": chunk.content,
+                        "page_number": chunk.page_number,
+                        "keywords": chunk.keywords,
+                        "typical_questions": chunk.typical_questions,
+                    },
+                )
+    # Postgres insert
+    await insert_context_chunks(create_chunks)
+    return len(create_chunks)
 
-        response = collection.generate.near_text(
+# HELPERS
+
+def is_weak_query(query: str) -> bool:
+    tokens = query.strip().split()
+    return len(tokens) < 4 or len(query) < 30
+
+def get_chunk_content(chunk) -> str:
+    if isinstance(chunk, dict):
+        return chunk.get("content", "")
+    return getattr(chunk, "content", "")
+
+def normalize_text(text: str) -> str:
+    text = text.replace("\u2019", "'").replace("\u2014", "-")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+def merge_texts(base: str, addition: str) -> str:
+    if not base:
+        return addition
+    max_overlap = min(len(base), len(addition))
+    for i in range(max_overlap, 50, -1):
+        if base.endswith(addition[:i]):
+            return base + addition[i:]
+    return base + "\n\n" + addition
+
+def build_context_string(chunks: list) -> str:
+    context = ""
+    for chunk in chunks:
+        content = normalize_text(get_chunk_content(chunk))
+        if not content:
+            continue
+        context = merge_texts(context, content)
+    return context.strip()
+
+def build_context_with_metadata(chunks: list) -> str:
+    keywords = sorted({
+        kw for c in chunks for kw in (c.keywords if hasattr(c, "keywords") else c.get("keywords", []))
+    })
+    body = build_context_string(chunks)
+    return f"""SOURCE: document
+KEYWORDS: {", ".join(keywords)}
+
+CONTENT:
+{body}
+"""
+
+# LLM HELPERS
+
+async def generate_ollama(
+    prompt: str,
+    model: str = 'llama3.2',
+    system: Optional[str] = None,
+    temperature: float = 0.3,
+    max_tokens: int = 512,
+    timeout: int = 30,
+) -> str:
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": temperature,
+            "num_predict": max_tokens,
+        },
+    }
+
+    if system:
+        payload["system"] = system
+
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        res = await client.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "llama3.2",
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": max_tokens
+                }
+            }
+        )
+        res.raise_for_status()
+
+    data = res.json()
+    return data.get("response", "").strip()
+
+async def expand_query(query: str) -> str:
+    prompt = f"""
+You are rewriting a user search query to slightly strengthen it for semantic search.
+
+STRICT RULES:
+- Do NOT add placeholders
+- Do NOT invent ages, locations, names, or examples
+- Do NOT ask questions
+- Do NOT change the meaning
+- ONLY add minimal connector or stop words if needed
+- Keep it ONE sentence
+- Output ONLY the rewritten query
+
+Original query:
+"{query}"
+
+Rewritten query:
+"""
+    expanded = await generate_ollama(
+        prompt,
+        temperature=0.1,
+        max_tokens=48,
+    )
+    return expanded.strip() or query
+
+
+# CONTEXT RETRIEVAL
+
+async def get_context(query: str) -> str:
+    weak = is_weak_query(query)
+    print("IS WEAK QUERY: ", weak)
+
+    chunks: List[Dict] = []
+
+    if weak:
+        query = await expand_query(query)
+        print('EXPANDED QUERY ', query)
+        
+        # Keyword / hybrid path
+        result = keyword_search(query, limit=8)
+
+        for obj in result.objects:
+            print("CHUNK META", obj.metadata)
+            props = obj.properties or {}
+            print("CHUNK KEYWORDS", props.get("keywords", []))
+
+            if obj.metadata.score and obj.metadata.score >= 0.4:
+                chunks.append({
+                    "content": props.get("content", ""),
+                    "keywords": props.get("keywords", []),
+                    "source_type": props.get("source_type", "document"),
+                    "page_number": props.get("page_number", 0),
+                    "typical_questions": props.get("typical_questions", []),
+                })
+
+    else:
+        # Semantic path
+        semantic_chunks = get_context_semantic_quick(query, limit=5)
+
+        for obj in semantic_chunks.objects:
+            print("CHUNK META", obj.metadata)
+            props = obj.properties or {}
+            print("CHUNK KEYWORDS", props.get("keywords", []))
+
+            if obj.metadata.distance and obj.metadata.distance <= 0.45:
+                chunks.append({
+                    "content": props.get("content", ""),
+                    "keywords": props.get("keywords", []),
+                    "source_type": props.get("source_type", "document"),
+                    "page_number": props.get("page_number", 0),
+                    "typical_questions": props.get("typical_questions", []),
+                })
+
+    if not chunks:
+        return ""
+
+    return build_context_string(chunks)
+
+def keyword_search(query: str, limit: int = 5):
+    with weaviate.connect_to_local() as client:
+        collection = client.collections.use("Context")
+        response = collection.query.bm25(
             query=query,
             limit=limit,
-            return_metadata=["distance"],
-            grouped_task=(
-                "Condense the information for a chatbot to quickly consume. "
-                "Only include the condensed text."
-            ),
+            query_properties=["keywords^2", "typical_questions", "content"],
+            return_metadata=MetadataQuery(score=True),
         )
+        return response
 
-        return [
-            {
-                **obj.properties,
-                "distance": obj.metadata.distance
-            }
-            for obj in response.objects
-        ]
-
-
-
-# RAG SEARCH (WITH LLM)
-# def get_context_rag(query: str):
-#     with weaviate.connect_to_local() as client:
-#         collection = client.collections.use(WEAVIATE_COLLECTION)
-
-#         response = collection.generate.near_text(
-#             query=query,
-#             limit=3,
-#             # return_metadata=["distance"],
-#             grouped_task="Condense the information for a chatbot to quickly consume. Only include the condensed text.",
-#             generative_provider=GenerativeConfig.ollama(
-#                 api_endpoint="http://ollama:11434",
-#                 model="llama3.2",
-#             ),
-#         )
-
-#         return response.generative.text
-
-def get_context_rag(query: str):
+def get_context_semantic_quick(query: str, limit: int = 5):
     with weaviate.connect_to_local() as client:
-        collection = client.collections.use(WEAVIATE_COLLECTION)
-
-        response = collection.generate.near_text(
+        collection = client.collections.use("Context")
+        response = collection.query.near_text(
             query=query,
-            limit=3,
-            return_metadata=["distance"],
-            grouped_task=(
-                "Condense the information for a chatbot to quickly consume. "
-                "Only include the condensed text."
-            ),
-            generative_provider=GenerativeConfig.ollama(
-                api_endpoint="http://ollama:11434",
-                model="llama3.2",
-            ),
+            limit=limit,
+            return_metadata=MetadataQuery(distance=True)
         )
-
-        # Extract distances from retrieved objects
-        distances = [
-            obj.metadata.distance
-            for obj in response.objects
-            if obj.metadata and obj.metadata.distance is not None
-        ]
-
-        best_distance = min(distances) if distances else None
-
-        return {
-            "content": response.generative.text,
-            "best_distance": best_distance,
-            "distances": distances,
-        }
-
-
-
-# DELETE CONTEXT BY SOURCE TYPE
-async def delete_context_by_source_type(source_type: str) -> int:
-    deleted_weaviate = 0
-
-    #  Weaviate delete 
-    with weaviate.connect_to_local() as client:
-        collection = client.collections.use(WEAVIATE_COLLECTION)
-
-        result = collection.data.delete_many(
-            where=Filter.by_property("description").equal('My name is King Kong!')
-        )
-
-        deleted_weaviate = result.matches
-
-    #  Postgres delete 
-    async with get_db() as conn:
-        result = await conn.execute(
-            """
-            DELETE FROM context_chunks
-            WHERE source_type = $1
-            """,
-            source_type,
-        )
-
-    return deleted_weaviate
+        return response

@@ -1,5 +1,5 @@
 from typing import List, Dict
-from storage.db import get_db
+from storage.db_helper import get_db
 
 
 async def save_message(session_id: str, role: str, content: str) -> None:
@@ -13,7 +13,6 @@ async def save_message(session_id: str, role: str, content: str) -> None:
             role,
             content,
         )
-
 
 async def get_session_messages(session_id: str, limit: int = 50) -> List[Dict]:
     async with get_db() as conn:

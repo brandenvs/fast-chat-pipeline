@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
-from storage.db import init_db
+from storage.db_helper import init_db
 from core import settings
 # from storage.init_db import init_db
 

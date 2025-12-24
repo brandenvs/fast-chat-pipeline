@@ -44,7 +44,7 @@ async def process_image(file: UploadFile) -> IngestResponse:
             chunks.append(
                 ContextChunk(
                     content=chunk,
-                    source_type='image',
+                    source='image',
                     page=None,
                     start_time_sec=None,
                     end_time_sec=None,

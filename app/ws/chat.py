@@ -26,20 +26,22 @@ Rules:
 async def handle_chat_message(session_id: str, textIn: str) -> dict[str, Any]:
     await save_message(session_id, "user", textIn)
 
-    history = await get_session_messages(session_id)
-
-    # conversation = (
+    history = await get_session_messages(session_id)    
     conversation = [{"role": "system", "content": BASE_SYSTEM_PROMPT}] + history
+    
+    query = [textIn]    
+    if len(history) >= 2:
+        for msg in history[-4:]:
+            if (msg["role"] == "user"):
+                query.append(msg['content'])
+    query.append(textIn)
+    query.reverse()
+    query_string = "\n".join(query)
 
-    if len(history) >= 3:
-        textIn += " " + " ".join(
-            msg["content"]
-            for msg in history[-3:]
-            if msg.get("content")
-        )            
     print('textIn ', textIn)
-    context = get_context(textIn)
-    print("context:", context)
+    print('query ', query_string)
+    context = await get_context(query_string)
+    print("\n\nCONTEXT:", context)
 
     if context:
         conversation.insert(
@@ -50,9 +52,9 @@ async def handle_chat_message(session_id: str, textIn: str) -> dict[str, Any]:
                 Use the following information to answer the user's question.
 
                 {context}
+
                 """,
                 },
-
         )
     else:
         conversation.insert(
@@ -65,8 +67,6 @@ async def handle_chat_message(session_id: str, textIn: str) -> dict[str, Any]:
     """,
             },
         )
-
-
     bot_reply = await generate_reply(conversation)
 
     await save_message(session_id, "assistant", bot_reply)
@@ -77,4 +77,3 @@ async def handle_chat_message(session_id: str, textIn: str) -> dict[str, Any]:
         "botReply": bot_reply,
         "previousMessages": history + [{"role": "assistant", "content": bot_reply}],
     }
-

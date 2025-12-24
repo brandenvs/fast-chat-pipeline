@@ -9,13 +9,16 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 CREATE INDEX IF NOT EXISTS idx_chat_session
 ON chat_messages (session_id, created_at);
 
-CREATE TABLE IF NOT EXISTS document_chunks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- source_id TEXT NOT NULL,
-    source_type TEXT NOT NULL,
-    content TEXT NOT NULL,
-    page INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+DROP TABLE context_chunks;
+
+CREATE TABLE IF NOT EXISTS context_chunks (
+  source_id TEXT PRIMARY KEY,
+  source_type TEXT NOT NULL,
+  content TEXT NOT NULL,
+  page_number INTEGER,
+  keywords TEXT NOT NULL,
+  typical_questions TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_document_chunks_source
