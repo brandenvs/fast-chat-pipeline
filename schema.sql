@@ -9,8 +9,6 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 CREATE INDEX IF NOT EXISTS idx_chat_session
 ON chat_messages (session_id, created_at);
 
-DROP TABLE context_chunks;
-
 CREATE TABLE IF NOT EXISTS context_chunks (
   source_id TEXT PRIMARY KEY,
   source_type TEXT NOT NULL,

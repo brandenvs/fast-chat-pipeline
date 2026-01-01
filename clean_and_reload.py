@@ -1,5 +1,4 @@
 """
-⚠️  DANGER ZONE
 This script will DELETE ALL CONTEXT DATA
 - Weaviate vectors
 - Postgres chat + chunk tables
