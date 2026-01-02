@@ -149,30 +149,32 @@ html = """
       let sessionId = null;
       let renderedCount = 0;
 
-      async function startSession() {
+    function wsBaseUrl() {
+        // https -> wss, http -> ws
+        const proto = (location.protocol === "https:") ? "wss:" : "ws:";
+        return `${proto}//${location.host}`;
+    }
+
+    async function startSession() {
         const res = await fetch("/set-session");
         const data = await res.json();
         sessionId = data.session_id;
 
-        ws = new WebSocket(`ws://localhost:8000/ws/chat/${sessionId}`);
+        ws = new WebSocket(`${wsBaseUrl()}/ws/chat/${sessionId}`);
 
         ws.onopen = () => console.log("WS connected", sessionId);
-        ws.onclose = e => console.log("WS closed", e.code);
+        ws.onclose = e => console.log("WS closed", e.code, e.reason);
+        ws.onerror = e => console.log("WS error", e);
 
         ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-
-          if (data.type === "typing") {
-            document.getElementById("typing").style.display =
-              data.value ? "block" : "none";
+        const data = JSON.parse(event.data);
+        if (data.type === "typing") {
+            document.getElementById("typing").style.display = data.value ? "block" : "none";
             return;
-          }
-
-          if (data.type === "message") {
-            renderChat(data.payload);
-          }
+        }
+        if (data.type === "message") renderChat(data.payload);
         };
-      }
+    }
 
       function renderChat(payload) {
         const chat = document.getElementById("chat");
