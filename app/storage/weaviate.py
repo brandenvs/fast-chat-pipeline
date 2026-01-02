@@ -252,3 +252,25 @@ def get_context_semantic_quick(query: str, limit: int = 5):
             return_metadata=MetadataQuery(distance=True)
         )
         return response
+
+
+import weaviate
+from weaviate.classes.config import Property, DataType
+
+def init_weaviate(client: weaviate.WeaviateClient) -> None:
+    existing = {c.name for c in client.collections.list_all().values()}
+    if "Context" in existing:
+        return
+
+    client.collections.create(
+        name="Context",
+        properties=[
+            Property(name="source_type", data_type=DataType.TEXT),
+            Property(name="content", data_type=DataType.TEXT),
+            Property(name="page_number", data_type=DataType.INT),
+            Property(name="keywords", data_type=DataType.TEXT_ARRAY),
+            Property(name="typical_questions", data_type=DataType.TEXT_ARRAY),
+        ],
+        # If you're pushing your own vectors elsewhere, keep vectorizer none.
+        vectorizer_config=None,
+    )

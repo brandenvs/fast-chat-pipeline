@@ -8,6 +8,7 @@ from app.storage.db_helper import init_db
 from app.core import settings
 # from storage.init_db import init_db
 
+from app.storage.weaviate import init_weaviate
 from app.ws.chat import handle_chat_message
 
 from app.ingestion.video import router as video_router
@@ -19,6 +20,8 @@ from app.ingestion.document import router as document_router
 async def lifespan(app: FastAPI):
     _ = settings.settings.openai_api_key 
     await init_db()
+    with settings.weaviate_client() as client:
+        init_weaviate(client)
     yield
 
 # App
