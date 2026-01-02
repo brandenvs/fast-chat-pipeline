@@ -38,30 +38,18 @@ services:
       - "11434:11434" # TODO remove in prod
     volumes:
       - ollama_data:/root/.ollama
-
   fast-chat-pipeline:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: app/Dockerfile
     container_name: fast-chat-pipeline
     restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
-      WEAVIATE_URL: http://weaviate:8080
-      OLLAMA_URL: http://ollama:11434
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-    depends_on:
-      - db
-      - weaviate
-      - ollama
     ports:
       - "127.0.0.1:8000:8000"
-    command: >
-      uvicorn app.main:app
-      --host 0.0.0.0
-      --port 8000
-      --proxy-headers
-      --forwarded-allow-ips="*"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # add your db/weaviate URLs here if needed
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 volumes:
   weaviate_data:
