@@ -255,10 +255,14 @@ def get_context_semantic_quick(query: str, limit: int = 5):
 
 
 import weaviate
-from weaviate.classes.config import Property, DataType
+from weaviate.classes.config import Property, DataType, Configure
 
 def init_weaviate(client: weaviate.WeaviateClient) -> None:
     existing = {c.name for c in client.collections.list_all().values()}
+
+    if "Context" in existing: # wipe it
+        client.collections.delete("Context")
+
     if "Context" in existing:
         return
 
@@ -271,6 +275,8 @@ def init_weaviate(client: weaviate.WeaviateClient) -> None:
             Property(name="keywords", data_type=DataType.TEXT_ARRAY),
             Property(name="typical_questions", data_type=DataType.TEXT_ARRAY),
         ],
-        # If you're pushing your own vectors elsewhere, keep vectorizer none.
-        vectorizer_config=None,
+        vectorizer_config=Configure.Vectorizer.text2vec_ollama(
+            api_endpoint="http://ollama:11434",
+            model="nomic-embed-text",
+        ),
     )

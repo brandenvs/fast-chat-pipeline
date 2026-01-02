@@ -32,6 +32,7 @@ services:
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
       PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
       ENABLE_MODULES: "text2vec-ollama,generative-ollama"
+      DEFAULT_VECTORIZER_MODULE: "text2vec-ollama"
       CLUSTER_HOSTNAME: "node1"
       OLLAMA_API_ENDPOINT: "http://ollama:11434"
     depends_on:
