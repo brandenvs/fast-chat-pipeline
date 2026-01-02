@@ -1,0 +1,69 @@
+services:
+  db:
+    image: timescale/timescaledb-ha:pg17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"    # TODO remove in prod
+    volumes:
+      - data:/home/postgres/pgdata/data
+
+  weaviate:
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --scheme
+      - http
+    image: cr.weaviate.io/semitechnologies/weaviate:1.35.1
+    ports:
+      - 8080:8080      # TODO remove in prod
+      - 50051:50051    # TODO remove in prod
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    restart: on-failure:0
+    environment:
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      ENABLE_MODULES: "text2vec-ollama,generative-ollama"
+      CLUSTER_HOSTNAME: "node1"
+      OLLAMA_API_ENDPOINT: "http://ollama:11434"
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:0.12.9
+    ports:
+      - "11434:11434" # TODO remove in prod
+    volumes:
+      - ollama_data:/root/.ollama
+
+  fast-chat-pipeline:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: fast-chat-pipeline
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
+      WEAVIATE_URL: http://weaviate:8080
+      OLLAMA_URL: http://ollama:11434
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      - db
+      - weaviate
+      - ollama
+    ports:
+      - "127.0.0.1:8000:8000"
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --proxy-headers
+      --forwarded-allow-ips="*"
+
+volumes:
+  weaviate_data:
+  ollama_data:
+  data:
