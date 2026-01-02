@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 from fastapi import UploadFile
-from ingestion.config import DOCUMENT_DIR
+from app.ingestion.config import DOCUMENT_DIR
 
 async def save_uploaded_file(
     file: UploadFile,

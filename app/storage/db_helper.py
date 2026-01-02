@@ -1,7 +1,7 @@
 import asyncpg
 from contextlib import asynccontextmanager
 from typing import List
-from services.models import ContextChunk
+from app.services.models import ContextChunk
 
 
 DATABASE_URL = "postgres://postgres:postgres@127.0.0.1:5432/postgres"

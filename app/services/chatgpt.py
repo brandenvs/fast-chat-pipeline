@@ -1,8 +1,8 @@
 import os
 from typing import List, Dict
 
-from openai import AsyncOpenAI, OpenAI
-from core.settings import settings
+from openai import AsyncOpenAI
+from app.core.settings import settings
 
 def get_openai_client():
     return AsyncOpenAI(api_key=settings.openai_api_key)

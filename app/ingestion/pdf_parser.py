@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import List
 from pypdf import PdfReader
 
-from ingestion.ocr_helper import infer_ocr
+from app.ingestion.ocr_helper import infer_ocr
 
 def needs_ocr(text: str) -> bool:
     return len(text.strip()) < 50

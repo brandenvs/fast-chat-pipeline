@@ -1,14 +1,14 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from uuid import uuid4
 
-from ingestion.llm_helper import generate_keywords_and_questions
-from storage.weaviate import save_chunks
-from ingestion.file_storage import save_uploaded_file
-from ingestion.config import DOCUMENT_DIR
-from ingestion.chunking import chunk_text
-from ingestion.pdf_parser import parse_pdf
-from ingestion.document_extractor import extract_text_data
-from services.models import ContextChunk, IngestResponse
+from app.ingestion.llm_helper import generate_keywords_and_questions
+from app.storage.weaviate import save_chunks
+from app.ingestion.file_storage import save_uploaded_file
+from app.ingestion.config import DOCUMENT_DIR
+from app.ingestion.chunking import chunk_text
+from app.ingestion.pdf_parser import parse_pdf
+from app.ingestion.document_extractor import extract_text_data
+from app.services.models import ContextChunk, IngestResponse
 
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])

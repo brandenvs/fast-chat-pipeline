@@ -2,8 +2,8 @@ import re
 from typing import Dict, Iterable, List
 import weaviate
 from weaviate.classes.query import MetadataQuery
-from services.models import ContextChunk
-from storage.db_helper import insert_context_chunks
+from app.services.models import ContextChunk
+from app.storage.db_helper import insert_context_chunks
 import httpx
 from typing import Optional
 

@@ -6,7 +6,7 @@ import re
 import numpy as np
 from PIL import Image
 import pytesseract
-from ingestion.config import POPPLER_PATH, TESSERACT_CMD
+from app.ingestion.config import POPPLER_PATH, TESSERACT_CMD
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
 

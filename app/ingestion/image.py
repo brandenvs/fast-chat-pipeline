@@ -2,11 +2,11 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile, File
 from uuid import uuid4
 
-from ingestion.chunking import chunk_text
-from ingestion.config import IMAGE_DIR
-from ingestion.file_storage import save_uploaded_file
-from ingestion.ocr_helper import infer_ocr
-from storage.weaviate import save_chunks
+from app.ingestion.chunking import chunk_text
+from app.ingestion.config import IMAGE_DIR
+from app.ingestion.file_storage import save_uploaded_file
+from app.ingestion.ocr_helper import infer_ocr
+from app.storage.weaviate import save_chunks
 
 from services.models import ContextChunk, IngestResponse
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File
-from services.models import IngestResponse
+from app.services.models import IngestResponse
 from uuid import uuid4
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
