@@ -105,7 +105,7 @@ async def generate_ollama(
 
     async with httpx.AsyncClient(timeout=timeout) as client:
         res = await client.post(
-            "http://localhost:11434/api/generate",
+            "http://ollama:11434/api/generate",
             json={
                 "model": "llama3.2",
                 "prompt": prompt,
