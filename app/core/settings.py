@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     env: str = Field("development", env="ENV")
 
     class Config:
-        env_file = ".env"
+        env_file = "app/.env"
         env_file_encoding = "utf-8"
 
 
