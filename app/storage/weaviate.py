@@ -2,6 +2,7 @@ import re
 from typing import Dict, Iterable, List
 import weaviate
 from weaviate.classes.query import MetadataQuery
+from app.core.settings import weaviate_client
 from app.services.models import ContextChunk
 from app.storage.db_helper import insert_context_chunks
 import httpx
@@ -15,7 +16,7 @@ async def save_chunks(incoming_chunks: Iterable[ContextChunk]) -> int:
         return 0
 
     # Weaviate insert
-    with weaviate.connect_to_local() as client:
+    with weaviate_client() as client:
         collection = client.collections.use("Context")
         with collection.batch.fixed_size(batch_size=200) as batch:
             for chunk in create_chunks:
@@ -232,7 +233,7 @@ async def get_context(query: str) -> str:
     return build_context_string(chunks)
 
 def keyword_search(query: str, limit: int = 5):
-    with weaviate.connect_to_local() as client:
+    with weaviate_client() as client:
         collection = client.collections.use("Context")
         response = collection.query.bm25(
             query=query,
@@ -243,7 +244,7 @@ def keyword_search(query: str, limit: int = 5):
         return response
 
 def get_context_semantic_quick(query: str, limit: int = 5):
-    with weaviate.connect_to_local() as client:
+    with weaviate_client() as client:
         collection = client.collections.use("Context")
         response = collection.query.near_text(
             query=query,
