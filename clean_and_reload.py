@@ -14,7 +14,7 @@ import os
 
 POSTGRES_DSN = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/postgres",
+    "postgresql://postgres:postgres@db:5432/postgres",
 )
 
 WEAVIATE_OLLAMA_ENDPOINT = "http://ollama:11434"
