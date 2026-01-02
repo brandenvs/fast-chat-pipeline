@@ -8,7 +8,7 @@ from app.ingestion.file_storage import save_uploaded_file
 from app.ingestion.ocr_helper import infer_ocr
 from app.storage.weaviate import save_chunks
 
-from services.models import ContextChunk, IngestResponse
+from app.services.models import ContextChunk, IngestResponse
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
