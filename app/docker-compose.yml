@@ -1,12 +1,17 @@
 services:
   db:
-    image: timescale/timescaledb-ha:pg17
+    image: postgres:17
     environment:
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"    # TODO remove in prod
-    volumes:
-      - data:/home/postgres/pgdata/data
+
+  # db:
+  #   image: timescale/timescaledb-ha:pg17
+  #   environment:
+  #     POSTGRES_PASSWORD: postgres
+  #   ports:
+  #     - "5432:5432"    # TODO remove in prod
+  #   volumes:
+  #     - data:/home/postgres/pgdata/data
 
   weaviate:
     command:
