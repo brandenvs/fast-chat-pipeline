@@ -4,7 +4,7 @@ from typing import List
 from app.services.models import ContextChunk
 
 
-DATABASE_URL = "postgres://postgres:postgres@127.0.0.1:5432/postgres"
+DATABASE_URL = "postgres://postgres:postgres@db:5432/postgres"
 _pool: asyncpg.Pool | None = None
 
 async def init_db():
