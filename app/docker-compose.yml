@@ -38,6 +38,7 @@ services:
       - "11434:11434" # TODO remove in prod
     volumes:
       - ollama_data:/root/.ollama
+      
   fast-chat-pipeline:
     build:
       context: ..
