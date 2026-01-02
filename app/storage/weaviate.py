@@ -260,8 +260,9 @@ from weaviate.classes.config import Property, DataType, Configure
 def init_weaviate(client: weaviate.WeaviateClient) -> None:
     existing = {c.name for c in client.collections.list_all().values()}
 
-    if "Context" in existing: # wipe it
+    if "Context" in existing:
         client.collections.delete("Context")
+        existing = {c.name for c in client.collections.list_all().values()}
 
     if "Context" in existing:
         return

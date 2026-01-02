@@ -18,6 +18,3 @@ CREATE TABLE IF NOT EXISTS context_chunks (
   typical_questions TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE INDEX IF NOT EXISTS idx_document_chunks_source
-ON document_chunks (source_id);
