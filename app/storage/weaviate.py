@@ -82,44 +82,76 @@ CONTENT:
 
 # LLM HELPERS
 
+# async def generate_ollama(
+#     prompt: str,
+#     model: str = 'llama3.2',
+#     system: Optional[str] = None,
+#     temperature: float = 0.3,
+#     max_tokens: int = 512,
+#     timeout: int = 30,
+# ) -> str:
+#     payload = {
+#         "model": model,
+#         "prompt": prompt,
+#         "stream": False,
+#         "options": {
+#             "temperature": temperature,
+#             "num_predict": max_tokens,
+#         },
+#     }
+
+#     if system:
+#         payload["system"] = system
+
+#     async with httpx.AsyncClient(timeout=timeout) as client:
+#         res = await client.post(
+#             "http://ollama:11434/api/generate",
+#             json={
+#                 "model": "llama3.2",
+#                 "prompt": prompt,
+#                 "stream": False,
+#                 "options": {
+#                     "temperature": temperature,
+#                     "num_predict": max_tokens
+#                 }
+#             }
+#         )
+#         res.raise_for_status()
+
+#     data = res.json()
+#     return data.get("response", "").strip()
+
 async def generate_ollama(
     prompt: str,
-    model: str = 'llama3.2',
+    model: str = "llama3.2",
     system: Optional[str] = None,
     temperature: float = 0.3,
     max_tokens: int = 512,
     timeout: int = 30,
 ) -> str:
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+
     payload = {
         "model": model,
-        "prompt": prompt,
+        "messages": messages,
         "stream": False,
-        "options": {
-            "temperature": temperature,
-            "num_predict": max_tokens,
-        },
+        "temperature": temperature,
+        "max_tokens": max_tokens,
     }
 
-    if system:
-        payload["system"] = system
-
     async with httpx.AsyncClient(timeout=timeout) as client:
-        res = await client.post(
-            "http://ollama:11434/v1/chat/completions",
-            json={
-                "model": "llama3.2",
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens
-                }
-            }
-        )
+        res = await client.post(f"http://ollama:11434/v1/chat/completions", json=payload)
+
+        if res.status_code >= 400:
+            print("Ollama error:", res.status_code, res.text)
+
         res.raise_for_status()
 
     data = res.json()
-    return data.get("response", "").strip()
+    return (data["choices"][0]["message"]["content"] or "").strip()
 
 async def expand_query(query: str) -> str:
     prompt = f"""
