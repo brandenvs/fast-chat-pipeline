@@ -1,18 +1,18 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
-from storage.db_helper import init_db
-from core import settings
+from app.storage.db_helper import init_db
+from app.core import settings
 # from storage.init_db import init_db
 
-from ws.chat import handle_chat_message
+from app.ws.chat import handle_chat_message
 
-from ingestion.video import router as video_router
-from ingestion.image import router as image_router
-from ingestion.document import router as document_router
+from app.ingestion.video import router as video_router
+from app.ingestion.image import router as image_router
+from app.ingestion.document import router as document_router
 
 # Lifespan (startup/shutdown)
 @asynccontextmanager

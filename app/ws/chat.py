@@ -1,8 +1,8 @@
 from typing import Any
 
-from storage.weaviate import get_context
-from services.chatgpt import generate_reply
-from storage.chat_repo import get_session_messages, save_message
+from app.storage.weaviate import get_context
+from app.services.chatgpt import generate_reply
+from app.storage.chat_repo import get_session_messages, save_message
 
 
 BASE_SYSTEM_PROMPT = """
