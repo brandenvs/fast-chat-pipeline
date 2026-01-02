@@ -41,7 +41,7 @@ services:
 
   fast-chat-pipeline:
     build:
-      context: ./fast-chat-pipeline
+      context: ../app
       dockerfile: Dockerfile
     container_name: fast-chat-pipeline
     restart: unless-stopped
